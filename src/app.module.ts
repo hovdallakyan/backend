@@ -16,7 +16,7 @@ import { PokemonModule } from './pokemon/pokemon.module';
         type: 'postgres',
         url: config.getOrThrow<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: config.get('NODE_ENV') !== 'production',
+        synchronize: true,
         ssl:
           config.get('NODE_ENV') === 'production'
             ? { rejectUnauthorized: false }
