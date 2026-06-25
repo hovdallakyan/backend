@@ -1,73 +1,58 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Pokédex — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS API that proxies the [PokéAPI](https://pokeapi.co) and persists a list of
+favorite Pokémon in Postgres.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Approach
 
-## Description
+- **NestJS + TypeScript**, split into a `pokemon` module (proxy + aggregation)
+  and a `favorites` module (persistence).
+- The frontend never calls PokéAPI directly — the backend fetches, enriches, and
+  shapes the data into clean DTOs.
+- The 150-Pokémon list and per-Pokémon details are **cached in memory** (the data
+  is static), so PokéAPI is only hit once per resource.
+- Favorites are stored in **Postgres via TypeORM**, keyed by `pokemonId`. On add,
+  the backend enriches with name + sprite so the favorites list is self-contained.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Run locally
 
-## Installation
+Requires Node 20+ and a Postgres database.
 
 ```bash
-$ npm install
+npm install
+cp .env.example .env   # then fill in DATABASE_URL etc.
+npm run start:dev
 ```
 
-## Running the app
+API runs at `http://localhost:3000` under the `/api` prefix. Schema is
+auto-synced in dev, so no migrations are needed to get started.
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run start:prod   # run the compiled build
+npm run test
 ```
 
-## Test
+### Environment
 
-```bash
-# unit tests
-$ npm run test
+See `.env.example`. Key vars: `PORT`, `FRONTEND_ORIGIN` (CORS), `DATABASE_URL`,
+and `POKEAPI_BASE_URL`.
 
-# e2e tests
-$ npm run test:e2e
+## API
 
-# test coverage
-$ npm run test:cov
-```
+All routes are under `/api`:
 
-## Support
+| Method & path | Description |
+|---|---|
+| `GET /health` | Health check |
+| `GET /pokemon` | First 150 Pokémon (summaries) |
+| `GET /pokemon/:id` | Single Pokémon detail (abilities, types, evolutions) |
+| `GET /favorites` | List favorites |
+| `POST /favorites` | Add a favorite — body `{ pokemonId }` (1–150) |
+| `DELETE /favorites/:id` | Remove a favorite (idempotent) |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Assumptions
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+- Single global favorites list, no authentication or per-user accounts.
+- Only the first 150 Pokémon are supported; `POST /favorites` validates that
+  range and rejects duplicates (`409`).
+- Upstream PokéAPI failures surface as `502`; unknown IDs as `404`.
