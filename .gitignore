@@ -1,0 +1,19 @@
+# compiled output
+/dist
+/node_modules
+
+# logs
+*.log
+npm-debug.log*
+
+# environment
+.env
+.env.local
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS
+.DS_Store
