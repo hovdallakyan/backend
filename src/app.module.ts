@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { FavoritesModule } from './favorites/favorites.module';
+import { PokemonModule } from './pokemon/pokemon.module';
 
 @Module({
   imports: [
@@ -14,15 +16,15 @@ import { AppService } from './app.service';
         type: 'postgres',
         url: config.getOrThrow<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        // Auto-create tables in dev. Disable in production in favour of migrations.
         synchronize: config.get('NODE_ENV') !== 'production',
-        // Render's managed Postgres requires SSL; local Postgres typically does not.
         ssl:
           config.get('NODE_ENV') === 'production'
             ? { rejectUnauthorized: false }
             : false,
       }),
     }),
+    PokemonModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
